@@ -1,0 +1,191 @@
+# Stage 1: Composer dependencies
+FROM composer:2 AS vendor
+
+WORKDIR /var/www
+
+# Copy composer files and install dependencies
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --optimize-autoloader    --no-scripts
+
+# Copy the rest of the application
+COPY . .
+
+# Stage 2: PHP runtime
+FROM php:8.3-cli-alpine
+
+# Install PHP extensions
+RUN apk add --no-cache \
+    bash \
+    postgresql-dev \
+    libzip-dev \
+    oniguruma-dev \
+    && docker-php-ext-install pdo_pgsql zip opcache mbstring
+
+# Copy Composer from previous stage
+COPY --from=vendor /usr/bin/composer /usr/bin/composer
+COPY --from=vendor /var/www /var/www
+
+WORKDIR /var/www
+
+# Fix permissions
+RUN mkdir -p storage/framework/{sessions,views,cache} \
+    && chmod -R 775 storage bootstrap/cache
+
+# Expose port (Render uses $PORT)
+EXPOSE 10000
+
+# Entrypoint / CMD
+CMD sh -c "\
+    # Generate APP_KEY if missing \
+    if [ -z \"$APP_KEY\" ] || [ \"$APP_KEY\" = '' ] || [ \"$APP_KEY\" = 'base64:' ]; then \
+        php artisan key:generate --force; \
+    fi && \
+    # Clear caches to avoid stale config / route issues \
+    php artisan config:clear && php artisan cache:clear && php artisan view:clear && php artisan route:clear && \
+    # Run migrations safely \
+    php artisan migrate --force && \
+    # Optional seeding if env DB_SEED=true \
+    if [ \"$DB_SEED\" = 'true' ]; then php artisan db:seed --force; fi && \
+    # Start Laravel dev server (Render will map $PORT) \
+    php artisan serve --host=0.0.0.0 --port=${PORT:-10000} \
+"
+
+
+
+
+# # Dockerfile.render
+# FROM php:8.3-cli-alpine
+
+# # Install dependencies
+# RUN apk add --no-cache \
+#     bash \
+#     postgresql-dev \
+#     libzip-dev \
+#     && docker-php-ext-install pdo_pgsql zip opcache
+
+# # Install Composer
+# COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# WORKDIR /var/www
+
+# # Copy only what's needed first
+# COPY composer.json composer.lock ./
+# RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
+
+# # Copy the rest of the application
+# COPY . .
+
+# # Fix permissions
+# RUN mkdir -p storage/framework/{sessions,views,cache} \
+#     && chmod -R 775 storage bootstrap/cache
+
+# EXPOSE 10000
+
+# # Everything happens at runtime
+# CMD sh -c "php artisan package:discover --ansi && \
+#            if [ -z \"\$APP_KEY\" ] || [ \"\$APP_KEY\" = '' ] || [ \"\$APP_KEY\" = 'base64:' ]; then \
+#                php artisan key:generate --force; \
+#            fi && \
+#            php artisan config:clear && \
+#            php artisan cache:clear && \
+#            php artisan migrate --force || true && \
+#            if [ \"\$DB_SEED\" = 'true' ]; then php artisan db:seed --force || true; fi && \
+#            php artisan config:cache && \
+#            php artisan route:cache && \
+#            php artisan serve --host=0.0.0.0 --port=10000"
+
+
+
+# "
+
+# FROM php:8.3-cli-alpine
+
+# # Install dependencies
+# RUN apk add --no-cache \
+#     bash \
+#     postgresql-dev \
+#     libzip-dev \
+#     && docker-php-ext-install pdo_pgsql zip opcache
+
+# # Install Composer
+# COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# WORKDIR /var/www
+
+# # Copy application
+# COPY . .
+
+# # Install PHP dependencies
+# RUN composer install --no-dev --no-interaction --optimize-autoloader \
+#     && php artisan package:discover --ansi
+
+# # Fix permissions
+# RUN chmod -R 775 storage bootstrap/cache
+
+# # Expose port
+# EXPOSE 10000
+
+# # Start server
+# CMD php artisan serve --host=0.0.0.0 --port=10000
+
+
+
+# ############################
+# # Stage 1: Composer vendor
+# ############################
+# FROM composer:2 AS vendor
+
+# WORKDIR /app
+
+# COPY composer.json composer.lock ./
+
+# RUN composer install \
+#     --no-dev \
+#     --prefer-dist \
+#     --no-interaction \
+#     --no-progress \
+#     --no-scripts \
+#     --optimize-autoloader
+
+# COPY . .
+
+# RUN composer dump-autoload --optimize \
+#  && php artisan package:discover --ansi
+
+# ############################
+# # Stage 2: PHP with built-in server
+# ############################
+# FROM php:8.3-cli-alpine
+
+# RUN apk add --no-cache \
+#         bash \
+#         postgresql-libs \
+#         libzip \
+#         postgresql-dev \
+#         libzip-dev \
+#     && docker-php-ext-install \
+#         pdo_pgsql \
+#         zip \
+#         opcache
+
+# WORKDIR /var/www
+
+# COPY --from=vendor /app /var/www
+
+# # Create entrypoint script inline
+# RUN echo '#!/bin/sh\n\
+# set -e\n\
+# echo "Starting Laravel on Render..."\n\
+# chmod -R 775 storage bootstrap/cache 2>/dev/null || true\n\
+# php artisan config:cache\n\
+# php artisan route:cache\n\
+# php artisan view:cache\n\
+# echo "Server starting on port 10000..."\n\
+# exec php artisan serve --host=0.0.0.0 --port=10000' > /entrypoint.sh \
+#  && chmod +x /entrypoint.sh
+
+# # Use port 10000 (Render's standard)
+# EXPOSE 10000
+
+# # Start via entrypoint
+# CMD ["/entrypoint.sh"]

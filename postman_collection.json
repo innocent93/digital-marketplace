@@ -1,0 +1,191 @@
+{
+    "info": {
+        "_postman_id": "digital-marketplace-assessment",
+        "name": "Digital Marketplace API",
+        "description": "Complete API for the Laravel Digital Marketplace assessment",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Register (Creator)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"New Creator\",\n    \"email\": \"newcreator@example.com\",\n    \"password\": \"password\",\n    \"password_confirmation\": \"password\",\n    \"role\": \"creator\"\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/register",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "register"]
+                        }
+                    }
+                },
+                {
+                    "name": "Register (Customer)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"New Customer\",\n    \"email\": \"newcustomer@example.com\",\n    \"password\": \"password\",\n    \"password_confirmation\": \"password\",\n    \"role\": \"customer\"\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/register",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "register"]
+                        }
+                    }
+                },
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"creator@example.com\",\n    \"password\": \"password\"\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "login"]
+                        },
+                        "description": "Save token from response for Bearer auth"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Public",
+            "item": [
+                {
+                    "name": "List Products",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/products?category=1&sort_price=desc&page=1",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "products"],
+                            "query": [
+                                {"key": "category", "value": "1"},
+                                {"key": "sort_price", "value": "desc"},
+                                {"key": "page", "value": "1"}
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "View Product",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/products/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "products", "1"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Creator (Bearer Token Required)",
+            "item": [
+                {
+                    "name": "List My Products",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+                        "url": {
+                            "raw": "{{base_url}}/api/products",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "products"]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Product",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {"key": "title", "value": "New Product"},
+                                {"key": "description", "value": "Description"},
+                                {"key": "price", "value": "49.99"},
+                                {"key": "category_id", "value": "1"},
+                                {"key": "file", "type": "file", "src": "path/to/file.pdf"}
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/products",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "products"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Customer (Bearer Token Required)",
+            "item": [
+                {
+                    "name": "Checkout",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+                        "url": {
+                            "raw": "{{base_url}}/api/checkout/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "checkout", "1"]
+                        }
+                    }
+                },
+                {
+                    "name": "Library",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+                        "url": {
+                            "raw": "{{base_url}}/api/library",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "library"]
+                        }
+                    }
+                },
+                {
+                    "name": "Download",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+                        "url": {
+                            "raw": "{{base_url}}/api/download/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "download", "1"]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000"
+        },
+        {
+            "key": "token",
+            "value": ""
+        }
+    ]
+}
