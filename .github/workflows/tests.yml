@@ -1,4 +1,4 @@
-name: Run Tests
+j isname: Run Tests
 
 on:
   push:
@@ -64,4 +64,4 @@ jobs:
         run: php artisan db:seed --force
 
       - name: Run tests
-        run: php artisan test --parallel
+        run: php artisan test
