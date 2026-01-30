@@ -28,14 +28,15 @@ jobs:
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           extensions: pdo_pgsql, zip, pcntl, redis
-          tools: composer
+          tools: composer:v2
 
       - name: Cache Composer packages
         uses: actions/cache@v4
@@ -45,21 +46,25 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
+        run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Copy .env
+      - name: Copy .env.example to .env
         run: cp .env.example .env
 
-      - name: Generate app key
+      - name: Generate application key
         run: php artisan key:generate
 
-      - name: Run tests
-        run: vendor/bin/pest --parallel
+      - name: Run migrations
+        run: php artisan migrate --force
         env:
           DB_HOST: localhost
           DB_PORT: 5432
           DB_DATABASE: marketplace
           DB_USERNAME: sail
           DB_PASSWORD: password
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
+
+      - name: Seed database
+        run: php artisan db:seed --force
+
+      - name: Run Pest tests in parallel
+        run: vendor/bin/pest --parallel
