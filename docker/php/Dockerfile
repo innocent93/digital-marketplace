@@ -18,7 +18,9 @@ RUN apk update && apk add --no-cache \
     libzip-dev \
     libzip \
     postgresql-libs \
-    bash
+    bash \
+    curl \
+    netcat-openbsd  # Add netcat for Redis checking
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_pgsql zip pcntl && \
@@ -26,9 +28,6 @@ RUN docker-php-ext-install pdo_pgsql zip pcntl && \
     pecl install redis && \
     docker-php-ext-enable redis && \
     apk del .build-deps
-
-# Install Node.js for Scribe documentation generation (if needed)
-RUN apk add --no-cache nodejs npm
 
 WORKDIR /var/www
 
@@ -38,12 +37,12 @@ COPY --from=composer-deps /app/vendor /var/www/vendor
 # Copy application code
 COPY . .
 
+# Generate Scribe documentation during build (only if .env exists)
+RUN if [ -f .env ]; then php artisan scribe:generate; fi
+
 # Fix permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
-
-# Generate Scribe documentation during build
-RUN php artisan scribe:generate
 
 # Copy configuration files
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
@@ -56,8 +55,7 @@ RUN chmod +x /entrypoint.sh
 RUN mkdir -p /run/nginx && \
     chown -R www-data:www-data /run/nginx
 
-# For Render.com, they need to listen on PORT environment variable
-EXPOSE 10000
+EXPOSE 80
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
