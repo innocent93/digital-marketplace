@@ -63,5 +63,5 @@ jobs:
       - name: Seed database
         run: php artisan db:seed --force
 
-      - name: Run Pest tests in parallel
-        run: vendor/bin/pest --parallel
+      - name: Run tests
+        run: php artisan test --parallel
