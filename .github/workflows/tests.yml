@@ -21,12 +21,6 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
-      redis:
-        image: redis:alpine
-        ports:
-          - 6379:6379
-        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,14 +48,17 @@ jobs:
       - name: Generate application key
         run: php artisan key:generate
 
+      - name: Set PostgreSQL connection in .env
+        run: |
+          echo "DB_CONNECTION=pgsql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=5432" >> .env
+          echo "DB_DATABASE=marketplace" >> .env
+          echo "DB_USERNAME=sail" >> .env
+          echo "DB_PASSWORD=password" >> .env
+
       - name: Run migrations
         run: php artisan migrate --force
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_DATABASE: marketplace
-          DB_USERNAME: sail
-          DB_PASSWORD: password
 
       - name: Seed database
         run: php artisan db:seed --force
